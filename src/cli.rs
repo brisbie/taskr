@@ -5,14 +5,17 @@ use clap::Parser;
 #[derive(Parser)]
 // Set the name of the command-line application
 #[command(name = "taskr")]
-pub struct Cli {
-    // Optional argument: --add <String>
-    // If provided, this will contain the title of the task to add
-    #[arg(long)]
-    pub add: Option<String>,
 
-    // Flag argument: --list
-    // If present, this will be true and triggers listing all tasks
+pub struct Cli {
     #[arg(long)]
-    pub list: bool,
+    pub add: Option<String>, //task name 
+
+    #[arg(long)]
+    pub priority: Option<i32>, //priority 1 - 10
+
+    #[arg(long)]
+    pub due: Option<String>, //due date
+    
+    #[arg(long)]
+    pub list: bool,         //list tasks
 }
