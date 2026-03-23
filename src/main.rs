@@ -85,72 +85,54 @@ async fn add_task(
         }
     }
 }
-// Struct to represent a row in the table
-async fn list_tasks(pool: &MySqlPool) {
-    let tasks = sqlx::query!(
-        r#"
-        SELECT id, title, priority, status, due_date
-        FROM tasks
-        ORDER BY id ASC
-        "#
-    )
-    .fetch_all(pool)
-    .await
-    .expect("Failed to fetch tasks");
 
-    // Column widths
-    let id_w = 4;
-    let name_w = 20;
-    let prio_w = 10;
-    let status_w = 10;
-    let due_w = 12;
+pub async fn list_tasks(pool: &sqlx::MySqlPool) -> Result<(), Box<dyn std::error::Error>> {
+    let tasks = sqlx::query!("SELECT id, title, priority, status, due_date FROM tasks")
+        .fetch_all(pool)
+        .await?;
 
-    // Header
+    if tasks.is_empty() {
+        println!("No tasks found. Use 'taskr --add' to create one.");
+        return Ok(());
+    }
+
     println!(
-        "{:<id_w$} {:<name_w$} {:<prio_w$} {:<status_w$} {:<due_w$}",
-        "ID",
-        "Name",
-        "Priority",
-        "Status",
-        "Due",
-        id_w = id_w,
-        name_w = name_w,
-        prio_w = prio_w,
-        status_w = status_w,
-        due_w = due_w,
+        "\n{:<4} {:<30} {:<10} {:<10} {:<12}",
+        "ID", "Name", "Priority", "Status", "Due"
     );
+    println!("{}", "-".repeat(70));
 
-    println!("{}", "-".repeat(id_w + name_w + prio_w + status_w + due_w + 4));
-    //Loop to fetch tasks
     for task in tasks {
-        let due = match task.due_date {
-            Some(date) => date.to_string(),
-            None => "N/A".to_string(),
+        let id = task.id;
+        let title = task.title;
+        let priority_val = task.priority;
+        let status = task.status;
+        
+        use colored::*; 
+
+        let priority_display = match priority_val {
+            5 => priority_val.to_string().red().bold(),
+            4 => priority_val.to_string().bright_red(),
+            3 => priority_val.to_string().yellow(),
+            2 => priority_val.to_string().green(),
+            1 => priority_val.to_string().bright_green(),
+            _ => priority_val.to_string().white(),
         };
 
-        let priority = match task.priority {
-            1 => "1".bright_green(),
-            2 => "2".green(),
-            3 => "3".yellow(),
-            4 => "4".truecolor(255, 165, 0),
-            5 => "5".red(),
-            _ => task.priority.to_string().normal(),
-        };
-
-        let name = task.title.bold();
+        let due = task.due_date
+            .map(|d| d.to_string())
+            .unwrap_or_else(|| "None".to_string());
 
         println!(
-            "{:<id_w$} {:<name_w$} {:<prio_w$} {:<status_w$} {:<due_w$}",
-            task.id,
-            name,
-            priority,
-            task.status,
-            due,
-            id_w = id_w,
-            name_w = name_w,
-            prio_w = prio_w,
-            status_w = status_w,
-            due_w = due_w,
+            "{:<4} {:<30} {:<20} {:<10} {:<12}",
+            id, 
+            title, 
+            format!("{:<10}", priority_display), 
+            status, 
+            due
         );
     }
+    
+    println!();
+    Ok(())
 }
