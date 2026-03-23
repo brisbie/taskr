@@ -35,7 +35,11 @@ async fn add_task(
     priority: i32,
     due_date: Option<String>,
 ) {
-    sqlx::query!(
+    // Start transaction
+    let mut tx = pool.begin().await.expect("Failed to start transaction");
+
+    // STEP 1: Insert task
+    let task_result = sqlx::query!(
         r#"
         INSERT INTO tasks (title, priority, due_date)
         VALUES (?, ?, ?)
@@ -44,13 +48,43 @@ async fn add_task(
         priority,
         due_date
     )
-    .execute(pool)
-    .await
-    .expect("Failed to insert task");
+    .execute(&mut *tx)
+    .await;
 
-    println!("Task added: {} (priority: {})", title, priority);
+    let task_id = match task_result {
+        Ok(res) => res.last_insert_id(),
+        Err(e) => {
+            tx.rollback().await.expect("Rollback failed");
+            eprintln!("Task insert failed: {}", e);
+            return;
+        }
+    };
+
+    // STEP 2: Insert log entry
+    let log_result = sqlx::query!(
+        r#"
+        INSERT INTO task_logs (task_id, message)
+        VALUES (?, ?)
+        "#,
+        task_id,
+        "Task created"
+    )
+    .execute(&mut *tx)
+    .await;
+
+    match log_result {
+        Ok(_) => {
+            // SUCCESS → commit everything
+            tx.commit().await.expect("Commit failed");
+            println!("Task added successfully: {}", title);
+        }
+        Err(e) => {
+            // FAILURE → rollback everything (including task insert)
+            tx.rollback().await.expect("Rollback failed");
+            eprintln!("Log insert failed, transaction rolled back: {}", e);
+        }
+    }
 }
-
 // Struct to represent a row in the table
 async fn list_tasks(pool: &MySqlPool) {
     let tasks = sqlx::query!(
