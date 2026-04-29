@@ -1,39 +1,39 @@
 use clap::Parser;
 
-#[derive(Parser)]
-#[command(name = "taskr")]
-#[command(about = "A CLI Task Manager", long_about = None)]
-pub struct Cli {
-    #[arg(short, long)]
-    pub add: Option<String>,
-
-    #[arg(short, long)]
-    pub priority: Option<i32>,
-
-    #[arg(short, long)]
-    pub project: Option<i32>,
-
-    #[arg(short, long)]
-    pub note: Option<String>,
-
-    #[arg(short, long)]
-    pub due: Option<String>,
-
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+pub struct Args {
     #[arg(short, long)]
     pub list: bool,
 
     #[arg(short, long)]
-    pub done: Option<i32>,
+    pub add: Option<String>,
+
+    #[arg(short, long)]
+    pub project: Option<String>,
+
+    #[arg(short, long)]
+    pub id: Option<i32>,
+
+    #[arg(short, long)]
+    pub subtask: Option<String>,
+
+    /// Status for subtask: 'pending' (yellow) or 'completed' (green)
+    #[arg(long)]
+    pub substatus: Option<String>,
+
+    #[arg(short, long)]
+    pub comment: Option<String>,
+
+    #[arg(short, long)]
+    pub tag: Option<String>,
+
+    #[arg(short = 'A', long)]
+    pub archive_project: Option<i32>,
 
     #[arg(short, long)]
     pub delete: Option<i32>,
 
-    #[arg(short = 'n', long)]
-    pub project_name: Option<String>,
-
-    #[arg(short, long)]
-    pub report: bool,
-
-    #[arg(long)]
-    pub archive: Option<i32>, // New flag for transaction demo
+    #[arg(short = 'C', long)]
+    pub complete: Option<i32>,
 }
